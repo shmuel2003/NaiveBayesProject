@@ -1,45 +1,35 @@
-import math
 from collections import defaultdict
+from typing import List, Dict
+from predict_function import PredictionMixin
+from evaluate_function import EvaluationMixin
 
-class NaiveBayesClassifier:
+class NaiveBayesClassifier(PredictionMixin, EvaluationMixin):
     def __init__(self):
-        self.class_probs = {}
+        self.class_probs = defaultdict(float)
         self.feature_probs = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
         self.classes = set()
-        self.laplace = 1
+        self.label_field = None
 
-    def train(self, dataset, target_index):
-        total_count = len(dataset)
-        class_counts = defaultdict(int)
+    def train(self, data: List[Dict[str, str]], label_field: str):
+        self.label_field = label_field
+        label_counts = defaultdict(int)
+        feature_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+        total = len(data)
 
-        for row in dataset:
-            cls = row[target_index]
-            self.classes.add(cls)
-            class_counts[cls] += 1
-
-        for cls in self.classes:
-            self.class_probs[cls] = (class_counts[cls] + self.laplace) / (total_count + self.laplace * len(self.classes))
-
-        for row in dataset:
-            cls = row[target_index]
-            for i, value in enumerate(row):
-                if i == target_index:
+        for row in data:
+            label = row[label_field]
+            label_counts[label] += 1
+            self.classes.add(label)
+            for feature, value in row.items():
+                if feature == label_field:
                     continue
-                self.feature_probs[i][value][cls] += 1
+                feature_counts[feature][value][label] += 1
 
-        for feature in self.feature_probs:
-            for value in self.feature_probs[feature]:
-                for cls in self.classes:
-                    count = self.feature_probs[feature][value][cls]
-                    self.feature_probs[feature][value][cls] = \
-                        (count + self.laplace) / (class_counts[cls] + self.laplace * len(self.feature_probs[feature]))
+        for label in self.classes:
+            self.class_probs[label] = (label_counts[label] + 1) / (total + len(self.classes))
 
-    def predict(self, record):
-        scores = {}
-        for cls in self.classes:
-            score = math.log(self.class_probs[cls])
-            for i, value in enumerate(record):
-                prob = self.feature_probs[i].get(value, {}).get(cls, self.laplace / (1 + self.laplace))
-                score += math.log(prob)
-            scores[cls] = score
-        return max(scores, key=scores.get)
+        for feature, value_dict in feature_counts.items():
+            for value, label_dict in value_dict.items():
+                for label in self.classes:
+                    count = label_dict.get(label, 0)
+                    self.feature_probs[feature][value][label] = (count + 1) / (label_counts[label] + len(value_dict))
