@@ -1,7 +1,7 @@
 from typing import Dict
 
-class PredictionMixin:
-    def predict(self, item: Dict[str, str]) -> str:
+class Classifier:
+    def classify(self, item: Dict[str, str]) -> str:
         label_scores = {}
         for label in self.classes:
             prob = self.class_probs[label]

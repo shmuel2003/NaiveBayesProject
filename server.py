@@ -1,9 +1,13 @@
 from flask import Flask, request, jsonify
+
+from data_cleaner import DataCleaner
+from classifier import Classifier
 from data_loader import DataLoader
-from naive_bayes_classifier import NaiveBayesClassifier
+from evaluator import Evaluator
+from trainer import Trainer
 
 app = Flask(__name__)
-classifier = NaiveBayesClassifier()
+
 dataset_loaded = False
 
 @app.route("/train", methods=["POST"])
@@ -14,8 +18,9 @@ def train_model():
     try:
         loader = DataLoader(filename)
         data = loader.load_data()
+        DataCleaner.clean(data)
         train_data, test_data = loader.split_data(data)
-        classifier.train(train_data, label_field)
+        Trainer.train(train_data, label_field)
         app.test_data = test_data
         dataset_loaded = True
         return jsonify({"message": "Model trained successfully."})
@@ -26,7 +31,8 @@ def train_model():
 def evaluate_model():
     if not dataset_loaded:
         return jsonify({"error": "Model not trained yet."}), 400
-    accuracy = classifier.evaluate(app.test_data)
+
+    accuracy = Evaluator.evaluate(app.test_data)
     return jsonify({"accuracy": accuracy})
 
 @app.route("/predict", methods=["POST"])
@@ -34,7 +40,7 @@ def predict_instance():
     if not dataset_loaded:
         return jsonify({"error": "Model not trained yet."}), 400
     instance = request.json.get("instance")
-    prediction = classifier.predict(instance)
+    prediction = Classifier.classify(instance)
     return jsonify({"prediction": prediction})
 
 if __name__ == "__main__":

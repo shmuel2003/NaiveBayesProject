@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-class EvaluationMixin:
+class Evaluator:
     def evaluate(self, test_data: List[Dict[str, str]]) -> float:
         correct = 0
         for row in test_data:

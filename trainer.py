@@ -1,9 +1,9 @@
 from collections import defaultdict
 from typing import List, Dict
-from predict_function import PredictionMixin
-from evaluate_function import EvaluationMixin
+from classifier import Classifier
+from evaluator import Evaluator
 
-class NaiveBayesClassifier(PredictionMixin, EvaluationMixin):
+class Trainer(Classifier, Evaluator):
     def __init__(self):
         self.class_probs = defaultdict(float)
         self.feature_probs = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
